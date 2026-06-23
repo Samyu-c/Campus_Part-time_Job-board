@@ -1,0 +1,72 @@
+// ============================================================
+//  Campus Job Board — Prisma Schema (SQLITE VERSION)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         String        // "STUDENT" | "PROFESSOR" | "ADMIN"
+  department   String?
+  skills       String?       @default("") // Changed from String[]
+  bio          String?
+  createdAt    DateTime      @default(now())
+
+  jobs         Job[]         @relation("PostedJobs")
+  apps         Application[]
+
+  @@map("users")
+}
+
+model Job {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String
+  skills       String?       @default("") // Changed from String[]
+  type         String        @default("UNPAID")
+  status       String        @default("OPEN")
+  duration     String?
+  deadline     DateTime?
+  compensation String?
+  location     String?
+  slots        Int           @default(1)
+  posterId     Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  poster       User          @relation("PostedJobs", fields: [posterId], references: [id])
+  applications Application[]
+
+  @@map("jobs")
+}
+
+model Application {
+  id          Int       @id @default(autoincrement())
+  resumeText  String
+  coverNote   String    @default("")
+  aiScore     Int?
+  aiFeedback  String?
+  aiBreakdown String?   // Changed from Json to String
+  status      String    @default("PENDING")
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  jobId       Int
+  studentId   Int
+
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  student     User      @relation(fields: [studentId], references: [id])
+
+  @@unique([jobId, studentId])
+  @@map("applications")
+}
